@@ -112,8 +112,12 @@ Azure API Center (APIC) を中心に、API Management(APIM)、パートナー MC
    azd down
    ```
 
-2. APIM-aoai-bingsearchmcp の削除  
-   [APIM-aoai-bingsearchmcp](https://github.com/apc-n-orita/APIM-aoai-bingsearchmcp) の環境も同様に、以下のコマンドで削除します。
-   ```bash
-   azd down
-   ```
+2. APIM-aoai-bingsearchmcp の削除
+
+   - [カスタム API のライフサイクル (GitHub Actions)](./ハンズオン.md#カスタム-api-のライフサイクル-github-actions)の手順で作成した openai-api の各バージョンを手動で削除してください。
+
+   - 以下のコマンドで環境を削除します。
+
+     ```bash
+     azd down
+     ```
