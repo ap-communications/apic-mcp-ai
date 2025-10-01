@@ -94,8 +94,8 @@ jobs:
                   api_id=$(jq -r '.info.title' "$file" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-')
                   api_version=$(jq -r '.info.version' "$file" | sed 's/\./-/g')
 
-                  # descriptionに"was retired"が含まれていればlifecycle-stageをretiredに更新（大文字・小文字・空白を無視）
-                  if [[ "$desc_lower" == *"wasretired"* ]]; then
+                  # descriptionに"is retired"が含まれていればlifecycle-stageをretiredに更新（大文字・小文字・空白を無視）
+                  if [[ "$desc_lower" == *"isretired"* ]]; then
                     echo "Updating lifecycle-stage to retired for $file"
                     az apic api version update \
                     -g ${{ vars.RESOURCE_GROUP }} \

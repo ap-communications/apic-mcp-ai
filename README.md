@@ -1,74 +1,120 @@
-# Azure Developer CLI (azd) Terraform Starter
+# API Center
 
-A starter blueprint for getting your application up on Azure using [Azure Developer CLI](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/overview) (azd). Add your application code, write Infrastructure as Code assets in Terraform to get your application up and running quickly.
+このプロジェクトは、API Center(APIC) の機能をハンズオン形式で学習できるリポジトリです。
 
-The following assets have been provided:
+## APIC 構成
 
-- Infrastructure-as-code (IaC) Terraform modules under the `infra` directory that demonstrate how to provision resources and setup resource tagging for azd.
-- A [dev container](https://containers.dev) configuration file under the `.devcontainer` directory that installs infrastructure tooling by default. This can be readily used to create cloud-hosted developer environments such as [GitHub Codespaces](https://aka.ms/codespaces).
-- Continuous deployment workflows for CI providers such as GitHub Actions under the `.github` directory, and Azure Pipelines under the `.azdo` directory that work for most use-cases.
+下図は本ハンズオン環境の構成です。<br>
+Azure API Center (APIC) を中心に、API Management(APIM)、パートナー MCP (GitHub / MSdocs / Atlassian)API 定義、Key Vault、GitHub Actions（カスタム API 定義の バージョン自動登録／ライフサイクル遷移）などの連携要素を包含しています。
+![2](assets/12.png)
 
-## Next Steps
+## ハンズオン概要
 
-### Step 1: Add application code
+本ハンズオンでは以下の一連の流れを通じて Azure API Center の主要機能を体験します。
 
-1. Initialize the service source code projects anywhere under the current directory. Ensure that all source code projects can be built successfully.
-   - > Note: For `function` services, it is recommended to initialize the project using the provided [quickstart tools](https://learn.microsoft.com/en-us/azure/azure-functions/functions-get-started).
-2. Once all service source code projects are building correctly, update `azure.yaml` to reference the source code projects.
-3. Run `azd package` to validate that all service source code projects can be built and packaged locally.
+本ハンズオンでは、以下の主要な機能を体験します。
 
-### Step 2: Provision Azure resources
+1. **パートナー MCP の確認**  
+   Azure ポータルや VS Code 拡張機能 ("Open in Visual Studio Code") を活用し、登録済みパートナー MCP（GitHub / MSdocs / Atlassian）の API、バージョン、定義、デプロイメント階層を把握します。
 
-Update or add Terraform modules to provision the relevant Azure resources. This can be done incrementally, as the list of [Azure resources](https://learn.microsoft.com/en-us/azure/?product=popular) are explored and added.
+2. **カスタム API のライフサイクル管理**  
+   GitHub Actions を利用し、OpenAPI 定義ファイルのコミット／マージのみで `preview → production → deprecated → retired` の段階的なライフサイクル遷移を体験します。
 
-- All Azure resources available in Terraform format can be found [here](https://learn.microsoft.com/en-us/azure/templates/).
+3. **その他の機能**
+   - **APIM API キー認証**  
+     API Center で API Key（APIM API キー）を構成し、ポータルの "Try this API" から `Ocp-Apim-Subscription-Key` を確認します。
+   - **API 分析（Analysis）**  
+     ポータルの API 分析画面で定義の品質や改善点を可視化し、ガバナンスや品質管理の観点を確認します。
+   - **VS Code 拡張での 2 つのビュー**  
+     管理プレーン（AZURE API CENTER）と開発者向けポータルビュー（API CENTER PORTAL VIEW）の権限や利用目的の違いを確認します。
 
-Run `azd provision` whenever you want to ensure that changes made are applied correctly and work as expected.
+より詳細な手順は [ハンズオン詳細](./ハンズオン.md) を参照してください。
 
-### Step 3: Tie in application and infrastructure
+## 環境セットアップ手順
 
-Certain changes to Terraform modules or deployment manifests are required to tie in application and infrastructure together. For example:
+### 前提条件
 
-1. Set up [application settings](#application-settings) for the code running in Azure to connect to other Azure resources.
-1. If you are accessing sensitive resources in Azure, set up [managed identities](#managed-identities) to allow the code running in Azure to securely access the resources.
-1. If you have secrets, it is recommended to store secrets in [Azure Key Vault](#azure-key-vault) that then can be retrieved by your application, with the use of managed identities.
-1. Configure [host configuration](#host-configuration) on your hosting platform to match your application's needs. This may include networking options, security options, or more advanced configuration that helps you take full advantage of Azure capabilities.
+事前に、[https://github.com/ap-communications/apic-mcp-ai](https://github.com/ap-communications/apic-mcp-ai) をご自身の APC の GitHub アカウントにフォークしてください。
 
-For more details, see [additional details](#additional-details) below.
+### APIM と Function MCP のデプロイ
 
-When changes are made, use azd to apply your changes in Azure and validate that they are working as expected:
+1. [APIM-aoai-bingsearchmcp](https://github.com/apc-n-orita/APIM-aoai-bingsearchmcp) の「デプロイ実行」までの手順を進めてください。
 
-- Run `azd up` to validate both infrastructure and application code changes.
-- Run `azd deploy` to validate application code changes.
+### API Center のデプロイ
 
-### Step 4: Up to Azure
+1. 必要な環境変数を `main.tfvars.json` に記載します。
 
-Finally, run `azd up` to run the end-to-end infrastructure provisioning (`azd provision`) and deployment (`azd deploy`) flow. Visit the service endpoints listed to see your application up-and-running!
+   例:
 
-## Additional Details
+   ```json
+   {
+     // locationはAPI Center対応リージョンのみ指定可能:
+     // "australiaeast", "canadacentral", "centralindia", "eastus", "francecentral", "swedencentral", "uksouth", "westeurope"
+     "location": "${AZURE_LOCATION}",
+     "environment_name": "${AZURE_ENV_NAME}",
+     "subscription_id": "${AZURE_SUBSCRIPTION_ID}",
+     "apim_name": "<APIM名>",
+     "apim_rg_name": "<APIMのリソースグループ>",
+     "github_repo": "<forkしたgitリポジトリ名>",
+     "github_owner": "<GitHubオーナー名>"
+   }
+   ```
 
-The following section examines different concepts that help tie in application and infrastructure.
+1. 以下のコマンドで環境をセットアップします。
+   > Terraform の処理中に `azurecli` を直接実行する箇所があります。`az account show` で表示されるサブスクリプション ID が、`azd up` で指定したものと一致していることを確認してください。
+   ```bash
+   azd up
+   ```
 
-### Application settings
+### 手動設定項目
 
-It is recommended to have application settings managed in Azure, separating configuration from code. Typically, the service host allows for application settings to be defined.
+#### API Center ポータルの設定
 
-- For `appservice` and `function`, application settings should be defined on the Terraform resource for the targeted host. Reference template example [here](https://github.com/Azure-Samples/todo-nodejs-mongo-terraform/tree/main/infra).
-- For `aks`, application settings are applied using deployment manifests under the `<service>/manifests` folder. Reference template example [here](https://github.com/Azure-Samples/todo-nodejs-mongo-aks/tree/main/src/api/manifests).
+1. [API センター ポータルの構成と発行](https://learn.microsoft.com/ja-jp/azure/api-center/set-up-api-center-portal#configure-and-publish-the-api-center-portal)の手順に従い、クライアント ID には [API Center のデプロイ](#api-center-のデプロイ)で出力された `apic_entra_app_id` を入力してください。
+2. ポータル設定の「可視性」では、「API version lifecycle」の廃止以外を選択し、適用します。
+   ![API version lifecycle の選択例](assets/1.png)
+3. 「保存と公開」をクリックして設定を反映します。
 
-### Managed identities
+#### APIC への APIM API キーの登録
 
-[Managed identities](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview) allows you to secure communication between services. This is done without having the need for you to manage any credentials.
+1. [API センターに API キー構成を追加する](https://learn.microsoft.com/ja-jp/azure/api-center/authorize-api-access#2--add-api-key-configuration-in-your-api-center)の手順を実施してください。その際 API キー パラメーター名は `Ocp-Apim-Subscription-Key` を指定し、API キー Key Vault シークレットは [API Center のデプロイ](#api-center-のデプロイ)のリソースグループ配下の Key Vault を指定してください。
+2. [API バージョンに認証構成を追加する](https://learn.microsoft.com/ja-jp/azure/api-center/authorize-api-access#add-authentication-configuration-to-an-api-version)の手順に従い、手順 1 で作成した API キー構成を `api-key-publish` の API バージョンに追加してください。
+3. [特定のユーザーまたはグループによるアクセスを管理する](https://learn.microsoft.com/ja-jp/azure/api-center/authorize-api-access#manage-access-by-specific-users-or-groups)の手順に従い、アクセスポリシーに自身を追加してください。
 
-### Azure Key Vault
+#### Github actions 変数とシークレット設定
 
-[Azure Key Vault](https://learn.microsoft.com/en-us/azure/key-vault/general/overview) allows you to store secrets securely. Your application can access these secrets securely through the use of managed identities.
+1. fork したリポジトリの「設定」→「Secrets and variables」→「Actions」から、以下の変数とシークレットを追加してください。
 
-### Host configuration
+##### シークレット
 
-For `appservice`, the following host configuration options are often modified:
+- `AZURE_CLIENT_ID` : マネージド ID（github-actions）のクライアント ID
+- `AZURE_SUBSCRIPTION_ID` : マネージド ID（github-actions）のサブスクリプション ID
+- `AZURE_TENANT_ID` : マネージド ID（github-actions）のテナント ID
 
-- Language runtime version
-- Exposed port from the running container (if running a web service)
-- Allowed origins for CORS (Cross-Origin Resource Sharing) protection (if running a web service backend with a frontend)
-- The run command that starts up your service
+##### 変数
+
+- `RESOURCE_GROUP` : APIC のリソースグループ名
+- `SERVICE_NAME` : APIC 名
+
+> 参考: [GitHub Actions でシークレットと変数を設定する方法](https://docs.github.com/ja/actions/security-guides/encrypted-secrets)
+
+## ハンズオン
+
+[ハンズオン](./ハンズオン.md)
+
+## 環境削除
+
+環境を削除する際は、以下の手順に従ってください。
+
+1. APIC の削除  
+   次のコマンドを実行して、APIC 環境を削除します。
+
+   ```bash
+   azd down
+   ```
+
+2. APIM-aoai-bingsearchmcp の削除  
+   [APIM-aoai-bingsearchmcp](https://github.com/apc-n-orita/APIM-aoai-bingsearchmcp) の環境も同様に、以下のコマンドで削除します。
+   ```bash
+   azd down
+   ```
