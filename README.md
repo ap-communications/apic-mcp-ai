@@ -12,8 +12,6 @@ Azure API Center (APIC) を中心に、API Management(APIM)、パートナー MC
 
 本ハンズオンでは以下の一連の流れを通じて Azure API Center の主要機能を体験します。
 
-本ハンズオンでは、以下の主要な機能を体験します。
-
 1. **パートナー MCP の確認**  
    Azure ポータルや VS Code 拡張機能 ("Open in Visual Studio Code") を活用し、登録済みパートナー MCP（GitHub / MSdocs / Atlassian）の API、バージョン、定義、デプロイメント階層を把握します。
 
@@ -22,9 +20,9 @@ Azure API Center (APIC) を中心に、API Management(APIM)、パートナー MC
 
 3. **その他の機能**
    - **APIM API キー認証**  
-     API Center で API Key（APIM API キー）を構成し、ポータルの "Try this API" から `Ocp-Apim-Subscription-Key` を確認します。
+     APIC ポータルの "Try this API" から `Ocp-Apim-Subscription-Key` を確認します。
    - **API 分析（Analysis）**  
-     ポータルの API 分析画面で定義の品質や改善点を可視化し、ガバナンスや品質管理の観点を確認します。
+     API 分析画面で定義の品質や改善点を可視化し、ガバナンスや品質管理の観点を確認します。
    - **VS Code 拡張での 2 つのビュー**  
      管理プレーン（AZURE API CENTER）と開発者向けポータルビュー（API CENTER PORTAL VIEW）の権限や利用目的の違いを確認します。
 
@@ -44,12 +42,13 @@ Azure API Center (APIC) を中心に、API Management(APIM)、パートナー MC
 
 1. 必要な環境変数を `main.tfvars.json` に記載します。
 
+   > location は API Center 対応リージョンのみ指定可能:<br>
+   > "australiaeast", "canadacentral", "centralindia", "eastus", "francecentral", "swedencentral", "uksouth", "westeurope"
+
    例:
 
    ```json
    {
-     // locationはAPI Center対応リージョンのみ指定可能:
-     // "australiaeast", "canadacentral", "centralindia", "eastus", "francecentral", "swedencentral", "uksouth", "westeurope"
      "location": "${AZURE_LOCATION}",
      "environment_name": "${AZURE_ENV_NAME}",
      "subscription_id": "${AZURE_SUBSCRIPTION_ID}",
