@@ -42,6 +42,6 @@ variable "publisher_email" {
 
 variable "publisher_name" {
   description = "The name of the owner of the service"
-  type = string
-  default = "n/a"
+  type        = string
+  default     = "n/a"
 }
