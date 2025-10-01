@@ -1,0 +1,140 @@
+name: Register API Definition to Azure API Center
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+    paths:
+      - "custom-apis/**/*.json"
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: read
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    #    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get specification file list in the PR
+        id: get-file-list
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pull_number = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const files = await github.rest.pulls.listFiles({
+              owner,
+              repo,
+              pull_number
+            });
+            // custom-apis/**/*.json のみ抽出
+            const jsonFiles = files.data
+              .map(f => f.filename)
+              .filter(f => f.match(/^custom-apis\/.*\.json$/));
+            if (jsonFiles.length > 0) {
+              core.exportVariable('API_JSON_FILES', jsonFiles.join(','));
+              console.log('API_JSON_FILES: ', jsonFiles.join(','));
+            } else {
+              console.log('No specification json files found in PR.');
+            }
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Register to API Center
+        uses: azure/CLI@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            # API JSONファイルが存在しない場合は処理をスキップ
+            if [ -z "${{ env.API_JSON_FILES }}" ]; then
+              echo "No API JSON files to process. Skipping step."
+            else
+              # API_JSON_FILES変数を配列に分割
+              IFS=',' read -ra FILES <<< "${{ env.API_JSON_FILES }}"
+              echo "API files to register: ${FILES[@]}"
+              for file in "${FILES[@]}"; do
+                # ファイル($file)が存在するか確認
+                if [ -f "$file" ]; then
+                  echo "Registering API for $file"
+                  az apic api register \
+                  -g ${{ vars.RESOURCE_GROUP }} \
+                  -n ${{ vars.SERVICE_NAME }} \
+                  --api-location "$file"
+                else
+                  echo "File $file does not exist. Skipping."
+                fi
+              done
+            fi
+      - name: Update lifecycle-stage in API Center based on API status
+        uses: azure/CLI@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            # API JSONファイルが存在しない場合は処理をスキップ
+            if [ -z "${{ env.API_JSON_FILES }}" ]; then
+              echo "No API JSON files to process. Skipping step."
+            else
+              # API_JSON_FILES変数を配列に分割
+              IFS=',' read -ra FILES <<< "${{ env.API_JSON_FILES }}"
+              for file in "${FILES[@]}"; do
+                # ファイル($file)が存在するか確認
+                if [ -f "$file" ]; then
+                  # JSONファイルからdescription, api_id, api_versionを抽出
+                  desc=$(jq -r '.info.description' "$file")
+                  desc_lower=$(echo "$desc" | tr -d '[:space:]' | tr -d '　' | tr '[:upper:]' '[:lower:]')
+                  api_id=$(jq -r '.info.title' "$file" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-')
+                  api_version=$(jq -r '.info.version' "$file" | sed 's/\./-/g')
+
+                  # descriptionに"is retired"が含まれていればlifecycle-stageをretiredに更新（大文字・小文字・空白を無視）
+                  if [[ "$desc_lower" == *"isretired"* ]]; then
+                    echo "Updating lifecycle-stage to retired for $file"
+                    az apic api version update \
+                    -g ${{ vars.RESOURCE_GROUP }} \
+                    -n ${{ vars.SERVICE_NAME }} \
+                    --api-id "$api_id" \
+                    --version-id "$api_version" \
+                    --lifecycle-stage retired
+
+                  # descriptionに"will be retired"または"is deprecated"が含まれていればlifecycle-stageをdeprecatedに更新（大文字・小文字・空白を無視）
+                  elif [[ "$desc_lower" == *"willberetired"* || "$desc_lower" == *"isdeprecated"* ]]; then
+                    echo "Updating lifecycle-stage to deprecated for $file"
+                    az apic api version update \
+                    -g ${{ vars.RESOURCE_GROUP }} \
+                    -n ${{ vars.SERVICE_NAME }} \
+                    --api-id "$api_id" \
+                    --version-id "$api_version" \
+                    --lifecycle-stage deprecated
+                  
+                  # descriptionに"is preview"が含まれていればlifecycle-stageをpreviewに更新（大文字・小文字・空白を無視）
+                  elif [[ "$desc_lower" == *"ispreview"* ]]; then
+                    echo "Updating lifecycle-stage to preview for $file"
+                    az apic api version update \
+                    -g ${{ vars.RESOURCE_GROUP }} \
+                    -n ${{ vars.SERVICE_NAME }} \
+                    --api-id "$api_id" \
+                    --version-id "$api_version" \
+                    --lifecycle-stage preview
+                  
+                  else
+                    echo "Updating lifecycle-stage to production for $file"
+                    az apic api version update \
+                    -g ${{ vars.RESOURCE_GROUP }} \
+                    -n ${{ vars.SERVICE_NAME }} \
+                    --api-id "$api_id" \
+                    --version-id "$api_version" \
+                    --lifecycle-stage production
+                  fi
+                else
+                  echo "File $file does not exist. Skipping."
+                fi
+              done
+            fi
