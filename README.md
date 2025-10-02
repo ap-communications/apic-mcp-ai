@@ -32,18 +32,22 @@ Azure API Center (APIC) を中心に、API Management(APIM)、パートナー MC
 
 ### 前提条件
 
-事前に、[https://github.com/ap-communications/apic-mcp-ai](https://github.com/ap-communications/apic-mcp-ai) をご自身の APC の GitHub アカウントにフォークしてください。
+- [https://github.com/ap-communications/apic-mcp-ai](https://github.com/ap-communications/apic-mcp-ai) をご自身の GitHub アカウントにフォークしてください。
+  - フォーク後、GitHub リポジトリの「Actions」タブを開き、赤枠部分をクリックして GitHub Actions を有効化してください。  
+    ![13](assets/13.png)
 
-### APIM と Function MCP のデプロイ
+### APIM と AOAI、Function MCP のデプロイ
 
-1. [APIM-aoai-bingsearchmcp](https://github.com/apc-n-orita/APIM-aoai-bingsearchmcp) の「デプロイ実行」までの手順を進めてください。
+このハンズオンでは「apic-mcp-ai」リポジトリのセットアップに加えて、外部リポジトリ「APIM-aoai-bingsearchmcp」のデプロイも必要です。  
+以下の手順に従い、[APIM-aoai-bingsearchmcp](https://github.com/apc-n-orita/APIM-aoai-bingsearchmcp) の「デプロイ実行」まで進めてください。
 
 ### API Center のデプロイ
 
-1. 必要な環境変数を `main.tfvars.json` に記載します。
+1. 必要な環境変数を `infra/main.tfvars.json` に記載します。
 
-   > location は API Center 対応リージョンのみ指定可能:<br>
-   > "australiaeast", "canadacentral", "centralindia", "eastus", "francecentral", "swedencentral", "uksouth", "westeurope"
+   > `location` には、API Center が対応しているリージョンのみ指定できます。  
+   > `azd up` を実行する際は、以下のいずれかのリージョンを指定してください。  
+   > `"australiaeast"`, `"canadacentral"`, `"centralindia"`, `"eastus"`, `"francecentral"`, `"swedencentral"`, `"uksouth"`, `"westeurope"`
 
    例:
 
@@ -70,25 +74,26 @@ Azure API Center (APIC) を中心に、API Management(APIM)、パートナー MC
 #### API Center ポータルの設定
 
 1. [API センター ポータルの構成と発行](https://learn.microsoft.com/ja-jp/azure/api-center/set-up-api-center-portal#configure-and-publish-the-api-center-portal)の手順に従い、クライアント ID には [API Center のデプロイ](#api-center-のデプロイ)で出力された `apic_entra_app_id` を入力してください。
-2. ポータル設定の「可視性」では、「API version lifecycle」の廃止以外を選択し、適用します。
+2. ポータル設定の「可視性」→「可視性のフィルター条件を定義する」では、「API version lifecycle」の廃止以外を選択し、適用します。
    ![API version lifecycle の選択例](assets/1.png)
 3. 「保存と公開」をクリックして設定を反映します。
 
 #### APIC への APIM API キーの登録
 
-1. [API センターに API キー構成を追加する](https://learn.microsoft.com/ja-jp/azure/api-center/authorize-api-access#2--add-api-key-configuration-in-your-api-center)の手順を実施してください。その際 API キー パラメーター名は `Ocp-Apim-Subscription-Key` を指定し、API キー Key Vault シークレットは [API Center のデプロイ](#api-center-のデプロイ)のリソースグループ配下の Key Vault を指定してください。
+1. [API センターに API キー構成を追加する](https://learn.microsoft.com/ja-jp/azure/api-center/authorize-api-access#2--add-api-key-configuration-in-your-api-center)の手順を実施してください。その際 API キーの場所はヘッダー、API キー パラメーター名は `Ocp-Apim-Subscription-Key` を指定し、API キー Key Vault シークレットは [API Center のデプロイ](#api-center-のデプロイ)のリソースグループ配下の Key Vault シークレットを指定してください。
 2. [API バージョンに認証構成を追加する](https://learn.microsoft.com/ja-jp/azure/api-center/authorize-api-access#add-authentication-configuration-to-an-api-version)の手順に従い、手順 1 で作成した API キー構成を `api-key-publish` の API バージョンに追加してください。
 3. [特定のユーザーまたはグループによるアクセスを管理する](https://learn.microsoft.com/ja-jp/azure/api-center/authorize-api-access#manage-access-by-specific-users-or-groups)の手順に従い、アクセスポリシーに自身を追加してください。
 
 #### Github actions 変数とシークレット設定
 
-1. fork したリポジトリの「設定」→「Secrets and variables」→「Actions」から、以下の変数とシークレットを追加してください。
+1. fork したリポジトリの「設定」→「Secrets and variables」→「Actions」から、以下の Repository 変数と Repository シークレットを追加してください。
 
 ##### シークレット
 
 - `AZURE_CLIENT_ID` : マネージド ID（github-actions）のクライアント ID
 - `AZURE_SUBSCRIPTION_ID` : マネージド ID（github-actions）のサブスクリプション ID
-- `AZURE_TENANT_ID` : マネージド ID（github-actions）のテナント ID
+- `AZURE_TENANT_ID` :
+  テナント ID
 
 ##### 変数
 
