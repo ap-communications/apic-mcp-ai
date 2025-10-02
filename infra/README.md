@@ -74,4 +74,7 @@
 | <a name="output_AZURE_LOCATION"></a> [AZURE\_LOCATION](#output\_AZURE\_LOCATION) | n/a |
 | <a name="output_AZURE_TENANT_ID"></a> [AZURE\_TENANT\_ID](#output\_AZURE\_TENANT\_ID) | n/a |
 | <a name="output_apic_entra_app_id"></a> [apic\_entra\_app\_id](#output\_apic\_entra\_app\_id) | The Application (client) ID of the Entra app associated with the API Center service |
+| <a name="output_apic_name"></a> [apic\_name](#output\_apic\_name) | The name of the API Center instance |
+| <a name="output_keyvault_name"></a> [keyvault\_name](#output\_keyvault\_name) | The name of the Key Vault instance |
+| <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name) | The name of the Resource Group |
 <!-- END_TF_DOCS -->

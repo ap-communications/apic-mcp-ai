@@ -20,3 +20,19 @@ output "apic_entra_app_id" {
   value       = module.apic.entra_app_id
 
 }
+
+output "apic_name" {
+  description = "The name of the API Center instance"
+  value       = module.apic.apic_service_name
+}
+
+output "keyvault_name" {
+  description = "The name of the Key Vault instance"
+  value       = lower("${azurecaf_name.kv_name.result}-${substr(local.resource_token, 0, 3)}")
+}
+
+output "resource_group_name" {
+  description = "The name of the Resource Group"
+  value       = azurerm_resource_group.rg.name
+
+}
